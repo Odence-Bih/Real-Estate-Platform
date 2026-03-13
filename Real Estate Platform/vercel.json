@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "buildCommand": "cd frontend && npm install --legacy-peer-deps && npm run build",
   "outputDirectory": "frontend/dist",
@@ -7,11 +8,11 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
-      "includeFiles": "backend/src/**"
+      "includeFiles": "backend/**"
     },
     "api/cron/escrow-release.js": {
       "maxDuration": 60,
-      "includeFiles": "backend/src/**"
+      "includeFiles": "backend/**"
     }
   },
   "rewrites": [
