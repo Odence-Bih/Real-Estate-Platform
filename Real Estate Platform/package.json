@@ -5,8 +5,10 @@
   "description": "LimbeHomes Real Estate Platform",
   "scripts": {
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install --legacy-peer-deps",
     "build": "cd frontend && npm run build",
-    "start": "cd backend && npm start"
+    "start": "cd backend && npm start",
+    "vercel-build": "cd frontend && npm install --legacy-peer-deps && npm run build"
   },
   "dependencies": {
     "dotenv": "^17.3.1"
