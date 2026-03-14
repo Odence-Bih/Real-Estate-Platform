@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import useAuthStore from '../../stores/authStore'
 
 export default function Footer() {
   const { t } = useTranslation()
+  const user = useAuthStore((s) => s.user)
   const year = new Date().getFullYear()
 
   return (
@@ -29,9 +31,15 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="hover:text-white transition-colors">
-                  {t('common.register')}
-                </Link>
+                {user ? (
+                  <Link to="/dashboard" className="hover:text-white transition-colors">
+                    {t('common.dashboard')}
+                  </Link>
+                ) : (
+                  <Link to="/register" className="hover:text-white transition-colors">
+                    {t('common.register')}
+                  </Link>
+                )}
               </li>
             </ul>
           </div>
