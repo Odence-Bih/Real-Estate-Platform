@@ -1,42 +1,15 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "version": 2,
-  "installCommand": "npm install && npm install --prefix backend && npm install --prefix frontend --legacy-peer-deps",
-  "buildCommand": "cd frontend && npm run build",
-  "outputDirectory": "frontend/dist",
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 30,
-      "includeFiles": "backend/**"
-    },
-    "api/cron/escrow-release.js": {
-      "maxDuration": 60,
-      "includeFiles": "backend/**"
-    }
+  "name": "limbehomes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LimbeHomes Real Estate Platform",
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "postinstall": "npm install --prefix backend && npm install --prefix frontend --legacy-peer-deps",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start"
   },
-  "rewrites": [
-    { "source": "/api/cron/:path*", "destination": "/api/cron/escrow-release" },
-    { "source": "/api/:path*", "destination": "/api" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron/escrow-release",
-      "schedule": "0 * * * *"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    },
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    }
-  ]
+  "dependencies": {
+    "dotenv": "^17.3.1"
+  }
 }
