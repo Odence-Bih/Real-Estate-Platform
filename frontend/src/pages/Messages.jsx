@@ -73,13 +73,13 @@ export default function Messages() {
           .eq('listing_id', listingId)
           .eq('buyer_id', user.id)
           .eq('seller_id', sellerId)
-          .single()
+          .maybeSingle()
 
         if (existing) {
           setActiveThread(existing.id)
           setShowThreadList(false)
         } else {
-          const { data: newThread } = await supabase
+          const { data: newThread, error: threadError } = await supabase
             .from('message_threads')
             .insert({
               listing_id: listingId,
@@ -88,6 +88,10 @@ export default function Messages() {
             })
             .select()
             .single()
+
+          if (threadError) {
+            console.error('Thread creation error:', threadError)
+          }
 
           if (newThread) {
             setActiveThread(newThread.id)
