@@ -107,45 +107,49 @@ export default function Messages() {
 
   // Fetch messages when active thread changes
   useEffect(() => {
-    if (!activeThread) return
+    if (!activeThread || !user) return
 
     const fetchMessages = async () => {
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('thread_id', activeThread)
-        .order('created_at', { ascending: true })
+      try {
+        const { data } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('thread_id', activeThread)
+          .order('created_at', { ascending: true })
 
-      if (data) setMessages(data)
+        if (data) setMessages(data)
 
-      // Get thread details
-      const { data: thread } = await supabase
-        .from('message_threads')
-        .select(`
-          *,
-          listing:listings!listing_id (id, title, price, transaction_type, price_period),
-          buyer:user_profiles!buyer_id (id, full_name, role),
-          seller:user_profiles!seller_id (id, full_name, role)
-        `)
-        .eq('id', activeThread)
-        .single()
+        // Get thread details
+        const { data: thread } = await supabase
+          .from('message_threads')
+          .select(`
+            *,
+            listing:listings!listing_id (id, title, price, transaction_type, price_period),
+            buyer:user_profiles!buyer_id (id, full_name, role),
+            seller:user_profiles!seller_id (id, full_name, role)
+          `)
+          .eq('id', activeThread)
+          .single()
 
-      if (thread) setThreadDetails(thread)
+        if (thread) setThreadDetails(thread)
 
-      // Mark as read
-      await supabase
-        .from('messages')
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('thread_id', activeThread)
-        .eq('is_read', false)
-        .neq('sender_id', user.id)
+        // Mark as read
+        await supabase
+          .from('messages')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .eq('thread_id', activeThread)
+          .eq('is_read', false)
+          .neq('sender_id', user.id)
 
-      // Update unread in thread list
-      setThreads((prev) =>
-        prev.map((t) =>
-          t.id === activeThread ? { ...t, unread_count: 0 } : t
+        // Update unread in thread list
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id === activeThread ? { ...t, unread_count: 0 } : t
+          )
         )
-      )
+      } catch (error) {
+        console.error('Error fetching messages:', error)
+      }
     }
 
     fetchMessages()
@@ -169,6 +173,7 @@ export default function Messages() {
               .from('messages')
               .update({ is_read: true, read_at: new Date().toISOString() })
               .eq('id', payload.new.id)
+              .catch((err) => console.error('Error marking message as read:', err))
           }
         }
       )
@@ -177,7 +182,7 @@ export default function Messages() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [activeThread])
+  }, [activeThread, user])
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -197,21 +202,37 @@ export default function Messages() {
       setPhoneWarning(true)
     }
 
-    const { error } = await supabase.from('messages').insert({
-      thread_id: activeThread,
-      sender_id: user.id,
-      content,
-    })
+    try {
+      const { data: newMsg, error } = await supabase.from('messages').insert({
+        thread_id: activeThread,
+        sender_id: user.id,
+        content,
+      }).select().single()
 
-    if (!error) {
-      setNewMessage('')
-      // Update thread's last_message_at
-      await supabase
-        .from('message_threads')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', activeThread)
+      if (error) {
+        console.error('Error sending message:', error)
+        return
+      }
+
+      if (newMsg) {
+        // Add new message to the list immediately for better UX
+        setMessages((prev) => [...prev, newMsg])
+        setNewMessage('')
+        
+        // Update thread's last_message_at and re-fetch threads for ordering
+        await supabase
+          .from('message_threads')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', activeThread)
+        
+        // Refresh thread list to show updated order
+        await fetchThreads()
+      }
+    } catch (error) {
+      console.error('Error in handleSend:', error)
+    } finally {
+      setSendLoading(false)
     }
-    setSendLoading(false)
   }
 
   const getOtherUser = (thread) => {
